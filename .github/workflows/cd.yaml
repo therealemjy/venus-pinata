@@ -22,28 +22,93 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          token: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
+          # DEV ONLY: uncomment once ready to be merged with prod repo
+          # token: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
+          # END DEV ONLY
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "lts/*"
+          node-version: "20.11.1"
           cache: "yarn"
 
       - name: Install dependencies
         run: yarn
 
-      # Bump package versions based on changesets and commit changes to the main branch
-      - name: Bump package versions
+      # DEV ONLY: uncomment once ready to be merged with prod repo
+      # # Bump package versions based on changesets and commit changes to the main branch
+      # - name: Bump package versions
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
+      #   run: |
+      #     git config user.name toolsvenus
+      #     git config user.email tools@venus.io
+      #     git fetch origin
+      #     git rebase --strategy-option=theirs origin/main
+      #     npx changeset version
+      #     git add -A
+      #     git status
+      #     git commit --verbose -a -m "chore: bump package versions" || exit 0
+      #     git push
+      
+      # - name: Run tests and collect coverage
+      #   run: yarn test --coverage
+      # END DEV ONLY
+
+      - name: Build
         env:
-          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
+          VITE_NETWORK: "mainnet"
+          VITE_ENV: "production"
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          VITE_POSTHOG_API_KEY: ${{ secrets.VITE_POSTHOG_API_KEY }}
+          VITE_POSTHOG_HOST_URL: ${{ secrets.VITE_POSTHOG_HOST_URL }}
+          VITE_ZYFI_API_KEY: ${{ secrets.VITE_ZYFI_API_KEY }}
+          VITE_NODE_REAL_API_KEY: ${{ secrets.VITE_NODE_REAL_API_KEY }}
+          VITE_THE_GRAPH_API_KEY: ${{ secrets.VITE_THE_GRAPH_API_KEY }}
         run: |
-          git config user.name toolsvenus
-          git config user.email tools@venus.io
-          git fetch origin
-          git rebase --strategy-option=theirs origin/main
-          npx changeset version
-          git add -A
-          git status
-          git commit --verbose -a -m "chore: bump package versions" || exit 0
-          git push
+          # We only build the dApp because the landing page is deployed with Vercel
+          yarn build --filter=@venusprotocol/evm
+
+      - name: Upload to IPFS and pin
+        id: uploadBuildToIpfs
+        uses: VenusProtocol/pinata-action@9a79aefa8243f66fb0c09b77f2177b3f86a2f8e4 
+        with:
+          path: ./apps/evm/build
+          pinName: app.venus.io
+          maxPinsToKeep: 20
+          pinataApiKey: ${{ secrets.PINATA_API_KEY }}
+          pinataSecretApiKey: ${{ secrets.PINATA_SECRET_API_KEY }}
+
+      - name: Update DNS record
+        uses: Uniswap/cloudflare-update-web3-gateway@b3205288b1c6d0acb63fa3bd8fb686c72a9e3f3e
+        env:
+          CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CLOUDFLARE_GATEWAY_ID: ${{ secrets.CLOUDFLARE_HOSTNAME_ID }}
+        with:
+          cid: ${{ steps.uploadBuildToIpfs.outputs.cid }}
+
+      - name: Purge cache
+        uses: fishmanlabs/cloudflare-purge-cache-action@7a2efee4563634fc0e76ad7f2c1ff0778a068569
+        with:
+          api_token: ${{ secrets.CLOUDFLARE_TOKEN }}
+          zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          purge_everything: 'true'
+
+      - name: Warm up cache
+        uses: VenusProtocol/globalping-action@f727a390d396e81af24f4a46d4baf73d6ad7d863
+        with:
+          target: app.abhfe765123chd9qw.com # TODO: replace with app.venus.op when merging with main
+          countryCodes: |
+            SG
+            HK
+            JP
+            DE
+            US
+            BR
+            GB
+            FR
+            SE
+            AU
+            IN
+            IE
