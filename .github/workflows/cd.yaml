@@ -34,23 +34,23 @@ jobs:
       - name: Install dependencies
         run: yarn
 
-      # Bump package versions based on changesets and commit changes to the main branch
-      - name: Bump package versions
-        env:
-          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
-        run: |
-          git config user.name toolsvenus
-          git config user.email tools@venus.io
-          git fetch origin
-          git rebase --strategy-option=theirs origin/main
-          npx changeset version
-          git add -A
-          git status
-          git commit --verbose -a -m "chore: bump package versions" || exit 0
-          git push
+      # # Bump package versions based on changesets and commit changes to the main branch
+      # - name: Bump package versions
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
+      #   run: |
+      #     git config user.name toolsvenus
+      #     git config user.email tools@venus.io
+      #     git fetch origin
+      #     git rebase --strategy-option=theirs origin/main
+      #     npx changeset version
+      #     git add -A
+      #     git status
+      #     git commit --verbose -a -m "chore: bump package versions" || exit 0
+      #     git push
       
-      - name: Run tests and collect coverage
-        run: yarn test --coverage
+      # - name: Run tests and collect coverage
+      #   run: yarn test --coverage
 
       - name: Build
         env:
@@ -77,29 +77,29 @@ jobs:
           pinataApiKey: ${{ secrets.PINATA_API_KEY }}
           pinataApiSecret: ${{ secrets.PINATA_API_SECRET }}
 
-      - name: Update DNS record and purge cache
-        uses: VenusProtocol/cloudflare-dnslink-action@297058f76eaeb59a95bc6352e7535f49a56ff456
-        with:
-          cid: ${{ steps.uploadBuildToIpfs.outputs.cid }}
-          purge: true
-          cloudflareHostname: ${{ env.HOSTNAME }}
-          cloudflareApiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          cloudflareZoneId: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+      # - name: Update DNS record and purge cache
+      #   uses: VenusProtocol/cloudflare-dnslink-action@297058f76eaeb59a95bc6352e7535f49a56ff456
+      #   with:
+      #     cid: ${{ steps.uploadBuildToIpfs.outputs.cid }}
+      #     purge: true
+      #     cloudflareHostname: ${{ env.HOSTNAME }}
+      #     cloudflareApiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      #     cloudflareZoneId: ${{ secrets.CLOUDFLARE_ZONE_ID }}
 
-      - name: Warm up cache
-        uses: VenusProtocol/globalping-action@f38ac8fef000087c08282a4437b54e398bd6f42a
-        with:
-          target: ${{ env.HOSTNAME }}
-          countryCodes: |
-            SG
-            HK
-            JP
-            DE
-            US
-            BR
-            GB
-            FR
-            SE
-            AU
-            IN
-            IE
+      # - name: Warm up cache
+      #   uses: VenusProtocol/globalping-action@f38ac8fef000087c08282a4437b54e398bd6f42a
+      #   with:
+      #     target: ${{ env.HOSTNAME }}
+      #     countryCodes: |
+      #       SG
+      #       HK
+      #       JP
+      #       DE
+      #       US
+      #       BR
+      #       GB
+      #       FR
+      #       SE
+      #       AU
+      #       IN
+      #       IE

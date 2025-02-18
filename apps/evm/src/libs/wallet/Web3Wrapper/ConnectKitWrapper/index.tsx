@@ -1,7 +1,7 @@
 import { ConnectKitProvider } from 'connectkit';
 import { useChainId } from 'libs/wallet';
 import { theme } from 'theme';
-import { AuthHandler } from './AuthHandler';
+// import { AuthHandler } from './AuthHandler';
 
 export interface ConnectKitWrapperProps {
   children?: React.ReactNode;
@@ -50,7 +50,7 @@ export const ConnectKitWrapper: React.FC<ConnectKitWrapperProps> = ({ children }
         '--ck-qr-background': theme.colors.offWhite,
       }}
     >
-      <AuthHandler />
+      {/* <AuthHandler /> */}
 
       {children}
     </ConnectKitProvider>
