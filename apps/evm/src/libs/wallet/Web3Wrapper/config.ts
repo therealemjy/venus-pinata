@@ -1,10 +1,12 @@
 import { getDefaultConfig } from 'connectkit';
-import { http, createConfig } from 'wagmi';
+import { http, createConfig, injected } from 'wagmi';
 
+import { Emitter } from '@wagmi/core/internal';
 import localConfig from 'config';
 import { MAIN_PRODUCTION_HOST } from 'constants/production';
 import type { ChainId } from 'types';
 import type { Chain, Transport } from 'viem';
+import { safe } from 'wagmi/connectors';
 import { chains } from '../chains';
 import { WALLET_CONNECT_PROJECT_ID } from '../constants';
 
@@ -29,8 +31,25 @@ const connectKitConfig = getDefaultConfig({
       wait: 50,
     },
   },
+  connectors: [injected()],
 });
 
-const config = createConfig(connectKitConfig);
+const config = createConfig({
+  ...connectKitConfig,
+  connectors: connectKitConfig.connectors?.map(connector => {
+    const c = connector({
+      chains: connectKitConfig.chains,
+      emitter: new Emitter(''),
+    });
+
+    if (c.id === 'safe') {
+      return safe({
+        allowedDomains: [/^app\.safe\.global$/],
+      });
+    }
+
+    return connector;
+  }),
+});
 
 export default config;
