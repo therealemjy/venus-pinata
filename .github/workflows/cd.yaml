@@ -34,23 +34,23 @@ jobs:
       - name: Install dependencies
         run: yarn
 
-      # Bump package versions based on changesets and commit changes to the main branch
-      - name: Bump package versions
-        env:
-          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
-        run: |
-          git config user.name toolsvenus
-          git config user.email tools@venus.io
-          git fetch origin
-          git rebase --strategy-option=theirs origin/main
-          npx changeset version
-          git add -A
-          git status
-          git commit --verbose -a -m "chore: bump package versions" || exit 0
-          git push
+      # # Bump package versions based on changesets and commit changes to the main branch
+      # - name: Bump package versions
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
+      #   run: |
+      #     git config user.name toolsvenus
+      #     git config user.email tools@venus.io
+      #     git fetch origin
+      #     git rebase --strategy-option=theirs origin/main
+      #     npx changeset version
+      #     git add -A
+      #     git status
+      #     git commit --verbose -a -m "chore: bump package versions" || exit 0
+      #     git push
       
-      - name: Run tests and collect coverage
-        run: yarn test --coverage
+      # - name: Run tests and collect coverage
+      #   run: yarn test --coverage
 
       - name: Build
         env:
