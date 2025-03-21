@@ -11,12 +11,26 @@ import FunctionKey from 'constants/functionKey';
 import contractTxData from '__mocks__/models/contractTxData';
 import { useIsFeatureEnabled } from 'hooks/useIsFeatureEnabled';
 import { VError } from 'libs/errors';
-import { useProvider, useSendContractTransaction } from 'libs/wallet';
+import { useProvider } from 'libs/wallet';
+import type { Config as WagmiConfig } from 'wagmi';
 import { useSendTransaction } from '..';
 import { CONFIRMATIONS, TIMEOUT_MS } from '../constants';
+import { sendTransaction } from '../sendTransaction';
 import { useTrackTransaction } from '../useTrackTransaction';
 
 vi.mock('../useTrackTransaction');
+vi.mock('../sendTransaction');
+
+const mockWagmiConfig = {} as WagmiConfig;
+
+vi.mock('wagmi', async () => {
+  const actual = await vi.importActual('wagmi');
+
+  return {
+    ...actual,
+    useConfig: vi.fn(() => mockWagmiConfig),
+  };
+});
 
 const fakeFnKey = [FunctionKey.SUPPLY];
 const fakeHookInput = {
@@ -42,10 +56,7 @@ describe('useSendTransaction', () => {
     const trackTransactionMock = vi.fn();
     (useTrackTransaction as Mock).mockImplementation(() => trackTransactionMock);
 
-    const sendContractTransactionMock = vi.fn(async () => fakeContractTransaction);
-    (useSendContractTransaction as Mock).mockReturnValue({
-      mutateAsync: sendContractTransactionMock,
-    });
+    (sendTransaction as Mock).mockReturnValue(fakeContractTransaction);
 
     const fnMock = vi.fn(async () => contractTxData);
 
@@ -67,9 +78,10 @@ describe('useSendTransaction', () => {
     expect(fnMock).toHaveBeenCalledTimes(1);
     expect(fnMock).toHaveBeenCalledWith(fakeMutationInput);
 
-    expect(sendContractTransactionMock).toHaveBeenCalledWith({
+    expect(sendTransaction).toHaveBeenCalledWith({
       txData: contractTxData,
       gasless: false,
+      wagmiConfig: mockWagmiConfig,
     });
 
     expect(trackTransactionMock).toHaveBeenCalledTimes(1);
@@ -84,10 +96,7 @@ describe('useSendTransaction', () => {
     const trackTransactionMock = vi.fn();
     (useTrackTransaction as Mock).mockImplementation(() => trackTransactionMock);
 
-    const sendContractTransactionMock = vi.fn(async () => fakeContractTransaction);
-    (useSendContractTransaction as Mock).mockReturnValue({
-      mutateAsync: sendContractTransactionMock,
-    });
+    (sendTransaction as Mock).mockReturnValue(fakeContractTransaction);
 
     const fnMock = vi.fn(async () => contractTxData);
 
@@ -110,9 +119,10 @@ describe('useSendTransaction', () => {
     expect(fnMock).toHaveBeenCalledTimes(1);
     expect(fnMock).toHaveBeenCalledWith(fakeMutationInput);
 
-    expect(sendContractTransactionMock).toHaveBeenCalledWith({
+    expect(sendTransaction).toHaveBeenCalledWith({
       txData: contractTxData,
       gasless: false,
+      wagmiConfig: mockWagmiConfig,
     });
 
     expect(trackTransactionMock).toHaveBeenCalledTimes(1);
@@ -138,10 +148,7 @@ describe('useSendTransaction', () => {
       type: 'unexpected',
       code: 'somethingWentWrong',
     });
-    const sendContractTransactionMock = vi.fn().mockRejectedValue(error);
-    (useSendContractTransaction as Mock).mockReturnValue({
-      mutateAsync: sendContractTransactionMock,
-    });
+    (sendTransaction as Mock).mockRejectedValue(error);
 
     const fnMock = vi.fn(async () => contractTxData);
     const onErrorMock = vi.fn();
@@ -164,9 +171,10 @@ describe('useSendTransaction', () => {
     expect(fnMock).toHaveBeenCalledTimes(1);
     expect(fnMock).toHaveBeenCalledWith(fakeMutationInput);
 
-    expect(sendContractTransactionMock).toHaveBeenCalledWith({
+    expect(sendTransaction).toHaveBeenCalledWith({
       txData: contractTxData,
       gasless: false,
+      wagmiConfig: mockWagmiConfig,
     });
 
     expect(trackTransactionMock).not.toHaveBeenCalled();

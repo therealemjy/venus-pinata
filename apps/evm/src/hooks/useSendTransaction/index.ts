@@ -8,8 +8,10 @@ import { store as resendPayingGasModalStore } from 'containers/ResendPayingGasMo
 import { useIsFeatureEnabled } from 'hooks/useIsFeatureEnabled';
 import { useUserChainSettings } from 'hooks/useUserChainSettings';
 import { VError } from 'libs/errors';
-import { useChainId, useProvider, useSendContractTransaction } from 'libs/wallet';
+import { useChainId, useProvider } from 'libs/wallet';
+import { useConfig } from 'wagmi';
 import { CONFIRMATIONS, TIMEOUT_MS } from './constants';
+import { sendTransaction } from './sendTransaction';
 import { useTrackTransaction } from './useTrackTransaction';
 
 export interface LastTransactionData<
@@ -60,8 +62,8 @@ export const useSendTransaction = <
 
   const { chainId } = useChainId();
   const { provider } = useProvider();
+  const wagmiConfig = useConfig();
 
-  const { mutateAsync: sendContractTransaction } = useSendContractTransaction();
   const openResendPayingGasModalStoreModal = resendPayingGasModalStore.use.openModal();
 
   const [userChainSettings] = useUserChainSettings();
@@ -97,10 +99,13 @@ export const useSendTransaction = <
       const txData = await fn(mutationInput);
 
       // Send the normal or gas-less transaction
-      const { hash: transactionHash } = await sendContractTransaction({
+      const { transactionHash } = await sendTransaction({
+        wagmiConfig,
         txData,
         gasless: shouldTryGasless,
       });
+
+      console.log('Safe transaction: ', transactionHash);
 
       // Track transaction's progress in the background
       trackTransaction({
@@ -111,6 +116,8 @@ export const useSendTransaction = <
       });
 
       if (options?.waitForConfirmation) {
+        console.log('final transactionHash (waitForConfirmation)', transactionHash);
+
         // Only return when transaction has been confirmed
         await provider.waitForTransaction(transactionHash, CONFIRMATIONS, TIMEOUT_MS);
       }
